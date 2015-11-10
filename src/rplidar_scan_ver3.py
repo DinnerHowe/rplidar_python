@@ -1,27 +1,26 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 """ 
-- Version 1.0 2015/5/11
+- Version 1.0 2015/3/11
 
 before run this code pls install parse library and also install construct lib for protocol
 
-每个frame发1次
+pub data in laserscan type ver 3.0
 
-pub data in laserscan type ver 2.0
+每个fram发一次，改进port finder
 
 Copyright (c) 2015 Xu Zhihao (Howe).  All rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 
 This programm is tested on kuboki base turtlebot. 
-
 """
 
 from reference import *
 import serial,numpy,os,time,rospy,getpass,collections
-from types import *  
+import list_ports_linux
+from list_ports_linux import *
 from sensor_msgs.msg import LaserScan
-from std_msgs.msg import String
 
 class driver:
 
@@ -38,25 +37,18 @@ class driver:
   rospy.loginfo( 'building topics') #Publisher
   self.pub_data=rospy.Publisher('/scan',LaserScan,queue_size=10)
 
- def port_finder(self,i,thread):
-  while thread and i<10:
-   try:
-    rospy.loginfo('evaluating /dev/ttyUSB%d'%i)
-    test = serial.Serial("/dev/ttyUSB%d"%i,115200)
-   except IOError, e:
-    rospy.loginfo(e)
-    i+=1
-    continue
-   except KeyboardInterrupt ,e:
-    rospy.loginfo(e)
-    break
+ def port_finder(self,thread):
+  ports = list(list_ports_linux.comports())
+  for port in ports:
+   if port[1]=='CJ9011A':
+    thread = True
+    rospy.loginfo( 'rplidar connect on port: %s'%port[0])
+    return [port,thread]
    else:
-    thread = False
-   finally:
-    rospy.loginfo( 'round %d port checking done'%i)
-  return [i,thread]
+    port=[]
+  return[port,thread]
 
- def __init__(self,thread=True,i=0):
+ def __init__(self,thread=False):
   rospy.loginfo( 'building node rplidar')
   rospy.init_node('rplidar', anonymous=False)
   rospy.loginfo( 'perparing for system parameters')
@@ -64,12 +56,10 @@ class driver:
   self.rplidar_matrix()
 
   rospy.loginfo( 'start connecting to port')
-  port=self.port_finder(i,thread)
-  if port[1]==False:
-   self.port = serial.Serial("/dev/ttyUSB%d"%port[0],115200)
+  port=self.port_finder(thread)
+  if port[1]:
+   self.port = serial.Serial("%s"%port[0][0],115200)
    self.port.flushInput()# discarding all flush input buffer contents
-   self.port.flushOutput()# discarding all flush input buffer contents
-   self.port.setDTR(level=0)
    rospy.loginfo('clear buffer done\n\n\n\n')
 
    health=self.device_health()
@@ -79,11 +69,12 @@ class driver:
    if health.status!=status_ok:
     self.driver_reset()
     rospy.loginfo('driver_reset done\n\n\n\n')
-
+   self.port.setDTR(0)
    self.current=rospy.Time.now()
    self.rplidar_points()
    rospy.loginfo('rplidar_points done \n\n\n\n')
-
+  else:
+   rospy.loginfo('cannot find rplidar please connect rplidar on')           
  #发送命令
  def command(self,com):
   rospy.loginfo('sending commands')
@@ -141,9 +132,8 @@ class driver:
   rospy.loginfo(' reset device ')
   cmd = reset
   self.command(cmd)
-  self.port.setDTR(level=1)
-  time.sleep(0.2)  
-
+  self.port.setDTR(1)
+  time.sleep(0.5)  
 
  def rplidar_matrix(self):
   self.frame={}
@@ -245,3 +235,4 @@ if __name__ == "__main__":
   rospy.loginfo( "process done and quit")
  except rospy.ROSInterruptException:
   rospy.loginfo("unknown_detector node terminated.")
+
