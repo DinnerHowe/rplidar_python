@@ -1,7 +1,7 @@
 # rplidar_python
  this is a ros package for rplidar
 
- written 2015 Xu Zhihao (Howe).  All rights reserved.
+ written by Xu Zhihao (Howe) 2015.  All rights reserved.
 
  This program is free software; you can redistribute it and/or modify it
 

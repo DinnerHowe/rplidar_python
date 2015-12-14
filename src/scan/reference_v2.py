@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 """ 
-- Version 1.0 2015/22/10   
+- Version 1.0 2015/11/11
+
+修改response解析方式   
 
 this file base on rplidar protocol interface
 
@@ -52,6 +54,8 @@ MULTI = 0x1
 UNDEFINED_f=0x2
 UNDEFINED_s=0x3
 
+angle_shift=1
+
 # struct
 # 命令格式
 command_format = Struct("cmd_format",
@@ -86,9 +90,6 @@ response_device_health_format = Struct("health_format",
 )
 
 # 返回单次扫描格式 (5 bytes)
-"""angular = angle_q6/64.0 Deg
-   distance = distance_q2/4.0 mm"""
-
 response_device_point_format = Struct("point_format",
 
  BitStruct("quality", 
@@ -96,15 +97,10 @@ response_device_point_format = Struct("point_format",
   Flag("syncbit_inverse"),#扫描起始标志位的取反,始终有S̅ = ! S
   Flag("syncbit")),#扫描起始标志位,S=1 表示新的一圈 360 度扫描的开始
 
-#测距点相对于 RPLIDAR 朝向夹角(角度表示,[0-360)。使用定点小数表示
- BitStruct("angle_q6_lower",
-  BitField("angle_q6_lower", 7),
-  Const(Flag("check_bit_c"), 1)), # check_bit must be 1
-
- ULInt8("angle_q6_higher"),
-
+ ULInt16("angle_q6"),#check_bit:1;angle_q6:15;
  ULInt16("distance_q2")
 )
+
 
 # 2进制字节转16进制字符
 toHex = lambda x:"".join([hex(ord(c))[2:].zfill(2) for c in x]).upper()

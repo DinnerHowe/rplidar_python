@@ -1,5 +1,5 @@
 <launch>
- <include file="$(find rplidar_python)/launch/rplidar.launch.xml">
+ <include file="$(find rplidar_python)/launch/rplidar.launch_v4.xml">
   <arg name="rplidar_frame" value="camera_depth_frame" />
  </include>
  <include file="$(find turtlebot_navigation)/launch/includes/gmapping.launch.xml"/>
