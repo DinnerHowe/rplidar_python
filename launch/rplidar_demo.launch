@@ -1,0 +1,10 @@
+<launch>
+
+ <include file="$(find rplidar_python)/launch/rplidar.launch.xml">
+  <arg name="rplidar_frame"  value="/laser" />
+ </include>
+ 
+ <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rplidar_ros)/rviz/rplidar.rviz" />
+ 
+</launch>
+

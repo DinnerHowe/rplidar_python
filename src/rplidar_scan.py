@@ -1,15 +1,9 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 """ 
-- Version 6.0 2015/11/13
+- Version 5.0 2015/11/12
 
 before run this code pls install parse library and also install construct lib for protocol
-
-pub data in laserscan type ver 5.0
-
-每个fram发一次，改进port finder,添加角度补偿功能,修改opcode,滤除杂波
-取消一个个pup self.raw_data中的元素，改为直接复制到list
-多线程？
 
 Copyright (c) 2015 Xu Zhihao (Howe).  All rights reserved.
 
@@ -18,13 +12,12 @@ This program is free software; you can redistribute it and/or modify
 This programm is tested on kuboki base turtlebot. 
 """
 
-from reference_v2 import *
-import serial,numpy,os,time,rospy,getpass,collections,math,threading,Queue
+from reference import *
+import serial,numpy,os,time,rospy,getpass,collections,math
 import list_ports_linux
 from list_ports_linux import *
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
-
 
 class driver:
 
@@ -42,7 +35,6 @@ class driver:
   self.ResponseMode={SINGLE:'SINGLE', MULTI:'MULTI',UNDEFINED_f:'UNDEFINED',UNDEFINED_s:'UNDEFINED'}
 
   self.raw_data=collections.deque(maxlen=self.maxlen)
-  self.data_queue=Queue.Queue(maxsize=self.maxlen)
 
   self.LaserScan=LaserScan()
   self.LaserScan.header.seq=0
@@ -67,6 +59,7 @@ class driver:
   rospy.init_node('rplidar', anonymous=False)
   rospy.loginfo( 'perparing for system parameters')
   self.defination()
+  self.not_start=True
   self.rplidar_matrix()
 
   rospy.loginfo( 'start connecting to port')
@@ -90,10 +83,11 @@ class driver:
    rospy.loginfo('rplidar_points done \n\n\n\n')
   else:
    rospy.loginfo('cannot find rplidar please connect rplidar on')
+   pass 
 
   self.stop_device()
 
-
+          
  #发送命令
  def command(self,com):
   rospy.loginfo('sending commands')
@@ -157,48 +151,45 @@ class driver:
  # start scanning
  def rplidar_matrix(self):
   self.frame={}
-  self.not_start=True
   self.ranges,self.intensive=[],[]
   for i in range(360):
    self.frame['%s.0'%i]=[]
    self.ranges.append(float('inf'))
    self.intensive.append(0.0)
 
+ def rplidar_points(self):
+  rospy.loginfo('rplidar single scan   %s'%hex(5))
+  cmd = scan
+  self.command(cmd)
 
-# buffer thread
- def buff_fillter(self):
-  while not rospy.is_shutdown() and not self.releaser.isAlive(): 
-   print 'data_releaser' 
-   self.lock.acquire()
-   try:
-   # checking buff len
+  a=0
+  
+  if self.header_check()==measurement:
+   while not rospy.is_shutdown():
+    # checking buff len
     while self.port.inWaiting()< response_device_point_format.sizeof():
      time.sleep(0.001)
-    self.OutputCoordinate(self.port.read(response_device_point_format.sizeof()))
+     
+    _str = self.port.read(response_device_point_format.sizeof()) 
+    response=response_device_point_format.parse(_str)
+    self.synbit=response.quality.syncbit
+
     # start a new circle?
     if self.synbit and self.not_start:
-     self.not_start=False
-     _str = self.port.read(response_device_point_format.sizeof())
-     self.raw_data.append(_str)
-    if len(self.raw_data)==self.maxlen:
-     self.data_queue.put(self.raw_data)
-     #break
-   finally:
-    self.raw_data.clear()
-    self.lock.release()
+      self.not_start=False
 
-# data realse thread
- def data_releaser(self):
-  while not rospy.is_shutdown() and not self.fillter.isAlive():
-   print 'data_releaser'
-   if not self.data_queue.empty() :
-    self.lock.acquire()
-    print 'lock.acquire'
-    try:
-     raw_data_queue=self.data_queue.get()
-     for i in range(len(raw_data_queue)):
-      self.PolorCoordinate=self.OutputCoordinate(raw_data_queue[i])
-      print "###",self.PolorCoordinate
+    # fill up raw data
+    if not self.not_start:
+     self.raw_data.append(_str)
+     
+    # release data
+    if self.synbit and not self.not_start:
+     self.data_buff=list(self.raw_data)
+     self.raw_data.clear()
+     
+     for i in range(len(self.data_buff)):
+      self.PolorCoordinate=self.OutputCoordinate(self.data_buff[i])
+      #print "###",self.PolorCoordinate
       self.angle=self.PolorCoordinate[0]
       if str(self.angle) in self.frame:
        if not math.isinf(self.PolorCoordinate[1]):
@@ -206,38 +197,12 @@ class driver:
         self.frame[str(self.angle)].append(self.PolorCoordinate[1])
         self.ranges[int(self.angle)]=numpy.mean(self.frame[str(self.angle)])
        else:
-        rospy.loginfo('distance infinit')
         pass
       else:
-       rospy.loginfo('rotation angle error, sample angle not in matrix')
        pass
-    finally:
-     print 'publisher lock release'
+            
      self.lidar_publisher(self.ranges,self.intensive)
-     self.rplidar_matrix()
-     self.lock.release()
-   else:
-    self.lock.release()
-    print 'lock release'
-   #break
-        
-
-#看这里，看这里
- def rplidar_points(self):
-  rospy.loginfo('rplidar single scan   %s'%hex(5))
-  cmd = scan
-  self.command(cmd)
-  if self.header_check()==measurement:
-#建立线程对象
-   self.lock = threading.Lock()
-   self.fillter = threading.Thread(target=self.buff_fillter, name='buff_fillter')
-   self.releaser = threading.Thread(target=self.data_releaser, name='data_releaser')
-   #while not rospy.is_shutdown():
-   self.fillter.start()
-   self.releaser.join()
-   self.releaser.start()
-   self.fillter.join()
-   print('thread %s .' % threading.current_thread().name)
+     self.rplidar_matrix() 
   else:
    rospy.loginfo('command for rplidar single scan error or return value error')
    os.system('rosnode kill cmd_tester')
@@ -245,9 +210,6 @@ class driver:
 
  def OutputCoordinate(self,raw):
   response=response_device_point_format.parse(raw)
-
-  self.synbit=response.quality.syncbit
-  self.synbit_inverse=response.quality.syncbit_inverse
 
   inten=response.quality.quality
   angular=(response.angle_q6>>angle_shift)/64.0
@@ -268,10 +230,10 @@ class driver:
   self.LaserScan.header.stamp=rospy.Time.now()
   self.LaserScan.header.seq+=1
   try:
-   self.LaserScan.header.frame_id=rospy.get_param("frame_id")
+   self.LaserScan.header.frame_id=rospy.get_param("~frame_id")
   except:
    self.LaserScan.header.frame_id="/camera_depth_frame" #default laser
-
+      
   # rplidar_parameters
   self.LaserScan.angle_max=numpy.pi-numpy.radians(0.0)
   self.LaserScan.angle_min=numpy.pi-numpy.radians(359.0)

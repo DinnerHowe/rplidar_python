@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 """ 
-- Version 1.0 2015/11/11
-
-修改response解析方式   
 
 this file base on rplidar protocol interface
 
