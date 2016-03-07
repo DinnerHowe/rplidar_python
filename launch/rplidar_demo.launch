@@ -4,7 +4,7 @@
   <arg name="rplidar_frame"  value="/laser" />
  </include>
  
- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rplidar_ros)/rviz/rplidar.rviz" />
+ <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rplidar_python)/rviz/rplidar.rviz" />
  
 </launch>
 
