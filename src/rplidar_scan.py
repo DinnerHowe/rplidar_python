@@ -41,7 +41,13 @@ class driver:
   self.accout=getpass.getuser()
 
   rospy.loginfo( 'building topics') #Publisher
-  self.pub_data=rospy.Publisher('/scan',LaserScan,queue_size=10)
+  if not rospy.has_param('~scan_topic'):
+   rospy.set_param('~scan_topic','/scan')
+  else:
+   pass
+  scan_topic=rospy.get_param('~scan_topic')
+  
+  self.pub_data=rospy.Publisher(scan_topic,LaserScan,queue_size=10)
 
  def port_finder(self,trigger):
   ports = list(list_ports_linux.comports())
