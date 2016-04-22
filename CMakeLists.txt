@@ -19,12 +19,6 @@ find_package(catkin REQUIRED COMPONENTS
 #   rplidar_parameters.msg
 # )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
 
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
