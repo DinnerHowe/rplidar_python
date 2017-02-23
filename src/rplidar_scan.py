@@ -37,8 +37,9 @@ class driver:
 
   self.raw_data=collections.deque(maxlen=self.maxlen)
 
-  self.LaserScan=LaserScan()
-  self.LaserScan.header.seq=0
+  # self.LaserScan=LaserScan()
+  # self.LaserScan.header.seq=0
+  self.seq = 0
   self.accout=getpass.getuser()
 
   self.locker = Lock()
@@ -226,32 +227,33 @@ class driver:
   self.duration=(rospy.Time.now().secs-self.current.secs)+(rospy.Time.now().nsecs-self.current.nsecs)*(10**(-9))
   self.current=rospy.Time.now()
   # header
-  self.LaserScan.header.stamp=rospy.Time.now()
-  self.LaserScan.header.seq+=1
+  _Scan = LaserScan()
+  _Scan.header.stamp=rospy.Time.now()
+  _Scan.header.seq = self.seq
+  self.seq +=1
   try:
-   self.LaserScan.header.frame_id=rospy.get_param("~frame_id")
+   _Scan.header.frame_id=rospy.get_param("~frame_id")
   except:
-   self.LaserScan.header.frame_id="/camera_depth_frame" #default laser
+   _Scan.header.frame_id="/camera_depth_frame" #default laser
 
   # rplidar_parameters
-  self.LaserScan.angle_max=numpy.pi-numpy.radians(0.0)
-  self.LaserScan.angle_min=numpy.pi-numpy.radians(359.0)
-  self.LaserScan.angle_increment=-numpy.radians(1.0)
-  self.LaserScan.time_increment=self.duration/360
-  self.LaserScan.scan_time=self.duration
+  _Scan.angle_max=numpy.pi-numpy.radians(0.0)
+  _Scan.angle_min=numpy.pi-numpy.radians(359.0)
+  _Scan.angle_increment=-numpy.radians(1.0)
+  _Scan.time_increment=self.duration/360
+  _Scan.scan_time=self.duration
   try:
-   self.LaserScan.range_min=rospy.get_param("range_min")#0.15
-   self.LaserScan.range_max=rospy.get_param("range_max")#6.0
+   _Scan.range_min=rospy.get_param("range_min")#0.15
+   _Scan.range_max=rospy.get_param("range_max")#6.0
   except:
-   self.LaserScan.range_min=0.15
-   self.LaserScan.range_max=6.0
+   _Scan.range_min=0.15
+   _Scan.range_max=6.0
   # rplidar_ranges
-  self.LaserScan.ranges=ranges
-  self.LaserScan.intensities=intensive
-  if self.LaserScan != LaserScan():
+  _Scan.ranges=ranges
+  _Scan.intensities=intensive
+  if _Scan != LaserScan():
    pub_data = rospy.Publisher(self.scan_topic, LaserScan, queue_size=1)
-   pub_data.publish(self.LaserScan)
-  self.LaserScan = LaserScan()
+   pub_data.publish(_Scan)
 
 if __name__ == "__main__":
  try:
