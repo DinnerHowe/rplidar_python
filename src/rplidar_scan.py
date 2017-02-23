@@ -45,9 +45,13 @@ class driver:
   rospy.loginfo( 'building topics') #Publisher
   if not rospy.has_param('~scan_topic'):
    rospy.set_param('~scan_topic','/scan')
-  else:
-   pass
   self.scan_topic=rospy.get_param('~scan_topic')
+
+  if not rospy.has_param('~rp_Frequency'):
+   rospy.set_param('~rp_Frequency', 7.0)
+  PublishFrequency = rospy.get_param('~rp_Frequency')
+
+  self.period = rospy.Duration(1.0 / PublishFrequency)
 
  def port_finder(self,trigger):
   ports = list(list_ports_linux.comports())
@@ -89,7 +93,7 @@ class driver:
    rospy.loginfo('rplidar_points done \n\n\n\n')
   else:
    rospy.loginfo('cannot find rplidar please connect rplidar on')
-   pass 
+   pass
 
   self.stop_device()
 
@@ -170,41 +174,43 @@ class driver:
   self.command(cmd)
   if self.header_check()==measurement:
    while not rospy.is_shutdown():
-   # while True:
-    # checking buff len
-    while self.port.inWaiting()< response_device_point_format.sizeof():
-     time.sleep(0.001)
-     
-    _str = self.port.read(response_device_point_format.sizeof()) 
-    response=response_device_point_format.parse(_str)
-    self.synbit=response.quality.syncbit
+    with self.locker:
+     # checking buff len
+     while self.port.inWaiting()< response_device_point_format.sizeof():
+      time.sleep(0.001)
 
-    # start a new circle?
-    if self.synbit and self.not_start:
-      self.not_start=False
+     _str = self.port.read(response_device_point_format.sizeof())
+     response=response_device_point_format.parse(_str)
+     self.synbit=response.quality.syncbit
 
-    # fill up raw data
-    if not self.not_start:
-     self.raw_data.append(_str)
-     
-    # release data
-    if self.synbit and not self.not_start:
-     self.data_buff=list(self.raw_data)
-     self.raw_data.clear()
-     
-     for i in range(len(self.data_buff)):
-      self.PolorCoordinate=self.OutputCoordinate(self.data_buff[i])
-      #print "###",self.PolorCoordinate
-      self.angle=self.PolorCoordinate[0]
-      if str(self.angle) in self.frame:
-       if not math.isinf(self.PolorCoordinate[1]):
-        self.intensive[int(self.angle)]=self.PolorCoordinate[2]
-        self.frame[str(self.angle)].append(self.PolorCoordinate[1])
-        self.ranges[int(self.angle)]=numpy.mean(self.frame[str(self.angle)])
+     # start a new circle?
+     if self.synbit and self.not_start:
+       self.not_start=False
 
-     self.lidar_publisher(self.ranges,self.intensive)
-     self.rplidar_matrix()
-     time.sleep(0.01)
+     # fill up raw data
+     if not self.not_start:
+      self.raw_data.append(_str)
+
+     # release data
+     if self.synbit and not self.not_start:
+      self.data_buff=list(self.raw_data)
+      self.raw_data.clear()
+
+      for i in range(len(self.data_buff)):
+       self.PolorCoordinate=self.OutputCoordinate(self.data_buff[i])
+       #print "###",self.PolorCoordinate
+       self.angle=self.PolorCoordinate[0]
+       if str(self.angle) in self.frame:
+        if not math.isinf(self.PolorCoordinate[1]):
+         self.intensive[int(self.angle)]=self.PolorCoordinate[2]
+         self.frame[str(self.angle)].append(self.PolorCoordinate[1])
+         self.ranges[int(self.angle)]=numpy.mean(self.frame[str(self.angle)])
+
+      self.lidar_publisher(self.ranges,self.intensive)
+      # self.rplidar_matrix()
+      self.frame = {}
+      self.ranges, self.intensive = [], []
+      time.sleep(0.01)
   else:
    rospy.loginfo('command for rplidar single scan error or return value error')
    os.system('rosnode kill cmd_tester')
@@ -224,36 +230,35 @@ class driver:
   return [angle,dis,inten]
 
  def lidar_publisher(self,ranges,intensive):
-  with self.locker:
-   self.duration=(rospy.Time.now().secs-self.current.secs)+(rospy.Time.now().nsecs-self.current.nsecs)*(10**(-9))
-   self.current=rospy.Time.now()
-   # header
-   self.LaserScan.header.stamp=rospy.Time.now()
-   self.LaserScan.header.seq+=1
-   try:
-    self.LaserScan.header.frame_id=rospy.get_param("~frame_id")
-   except:
-    self.LaserScan.header.frame_id="/camera_depth_frame" #default laser
+  self.duration=(rospy.Time.now().secs-self.current.secs)+(rospy.Time.now().nsecs-self.current.nsecs)*(10**(-9))
+  self.current=rospy.Time.now()
+  # header
+  self.LaserScan.header.stamp=rospy.Time.now()
+  self.LaserScan.header.seq+=1
+  try:
+   self.LaserScan.header.frame_id=rospy.get_param("~frame_id")
+  except:
+   self.LaserScan.header.frame_id="/camera_depth_frame" #default laser
 
-   # rplidar_parameters
-   self.LaserScan.angle_max=numpy.pi-numpy.radians(0.0)
-   self.LaserScan.angle_min=numpy.pi-numpy.radians(359.0)
-   self.LaserScan.angle_increment=-numpy.radians(1.0)
-   self.LaserScan.time_increment=self.duration/360
-   self.LaserScan.scan_time=self.duration
-   try:
-    self.LaserScan.range_min=rospy.get_param("range_min")#0.15
-    self.LaserScan.range_max=rospy.get_param("range_max")#6.0
-   except:
-    self.LaserScan.range_min=0.15
-    self.LaserScan.range_max=6.0
-   # rplidar_ranges
-   self.LaserScan.ranges=ranges
-   self.LaserScan.intensities=intensive
-   if self.LaserScan != LaserScan():
-    pub_data = rospy.Publisher(self.scan_topic, LaserScan, queue_size=1)
-    pub_data.publish(self.LaserScan)
-   self.LaserScan = LaserScan()
+  # rplidar_parameters
+  self.LaserScan.angle_max=numpy.pi-numpy.radians(0.0)
+  self.LaserScan.angle_min=numpy.pi-numpy.radians(359.0)
+  self.LaserScan.angle_increment=-numpy.radians(1.0)
+  self.LaserScan.time_increment=self.duration/360
+  self.LaserScan.scan_time=self.duration
+  try:
+   self.LaserScan.range_min=rospy.get_param("range_min")#0.15
+   self.LaserScan.range_max=rospy.get_param("range_max")#6.0
+  except:
+   self.LaserScan.range_min=0.15
+   self.LaserScan.range_max=6.0
+  # rplidar_ranges
+  self.LaserScan.ranges=ranges
+  self.LaserScan.intensities=intensive
+  if self.LaserScan != LaserScan():
+   pub_data = rospy.Publisher(self.scan_topic, LaserScan, queue_size=1)
+   pub_data.publish(self.LaserScan)
+  self.LaserScan = LaserScan()
 
 if __name__ == "__main__":
  try:
