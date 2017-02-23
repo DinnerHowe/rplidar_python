@@ -212,8 +212,11 @@ class driver:
           self.frame[str(angle)].append(copy.deepcopy(PolorCoordinate[1]))
           self.ranges[int(angle)]=round(numpy.mean(self.frame[str(angle)]),4)
         else:
+
          rospy.logwarn(str(angle)+' ++++ '+str(len(self.frame.keys())))
-       rospy.loginfo(str(len(data_buff)) + '_str: \n' + str(response) + '\n')
+
+       rospy.loginfo(str(len(data_buff)) + '_str: \n' + str(response) + str(PolorCoordinate) + '\n')
+
        self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
        rate.sleep()
        self.port.flushOutput()
