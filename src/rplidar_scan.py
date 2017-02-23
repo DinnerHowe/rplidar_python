@@ -184,39 +184,39 @@ class driver:
   self.command(cmd)
   if self.header_check()==measurement:
    rate = rospy.Rate(self.frequency)
+   while self.port.inWaiting() < response_device_point_format.sizeof():
+    time.sleep(0.001)
    while not rospy.is_shutdown():
-     while self.port.inWaiting()< response_device_point_format.sizeof():
-      time.sleep(0.001)
-     _str = self.port.read(response_device_point_format.sizeof())
-     response=response_device_point_format.parse(_str)
-     synbit=response.quality.syncbit
-     # start a new circle?
-     if synbit and self.not_start:
-       self.not_start=False
-     # fill up raw data
-     if not self.not_start:
-      global raw_data
-      raw_data.append(copy.deepcopy(_str))
-      # release data
-      if synbit:
-       data_buff=list(raw_data)
-       raw_data.clear()
-       for i in range(len(data_buff)):
-        PolorCoordinate=self.OutputCoordinate(data_buff[i])
-        angle=PolorCoordinate[0]
-        if str(angle) in self.frame:
-         if not math.isinf(PolorCoordinate[1]):
-          self.intensive[int(angle)]=PolorCoordinate[2]
-          self.frame[str(angle)].append(copy.deepcopy(PolorCoordinate[1]))
-          self.ranges[int(angle)]=round(numpy.mean(self.frame[str(angle)]),4)
-        else:
-         rospy.loginfo(str(angle))
-       self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
-       rate.sleep()
-       self.rplidar_matrix()
-       self.port.flushOutput()
-       # self.frame = {}
-       # self.ranges, self.intensive = [], []
+    _str = self.port.read(response_device_point_format.sizeof())
+    response=response_device_point_format.parse(_str)
+    synbit=response.quality.syncbit
+    # start a new circle?
+    if synbit and self.not_start:
+      self.not_start=False
+    # fill up raw data
+    if not self.not_start:
+     global raw_data
+     raw_data.append(copy.deepcopy(_str))
+     # release data
+     if synbit:
+      data_buff=list(raw_data)
+      raw_data.clear()
+      for i in range(len(data_buff)):
+       PolorCoordinate=self.OutputCoordinate(data_buff[i])
+       angle=PolorCoordinate[0]
+       if str(angle) in self.frame:
+        if not math.isinf(PolorCoordinate[1]):
+         self.intensive[int(angle)]=PolorCoordinate[2]
+         self.frame[str(angle)].append(copy.deepcopy(PolorCoordinate[1]))
+         self.ranges[int(angle)]=round(numpy.mean(self.frame[str(angle)]),4)
+       else:
+        rospy.loginfo(str(angle))
+      self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
+      rate.sleep()
+      self.rplidar_matrix()
+      self.port.flushOutput()
+      # self.frame = {}
+      # self.ranges, self.intensive = [], []
 
   else:
    rospy.loginfo('command for rplidar single scan error or return value error')
