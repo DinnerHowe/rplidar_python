@@ -18,6 +18,7 @@ import list_ports_linux
 # from list_ports_linux import *
 from sensor_msgs.msg import LaserScan
 from threading import Lock
+import copy
 
 class driver:
 
@@ -206,10 +207,10 @@ class driver:
          self.frame[str(self.angle)].append(self.PolorCoordinate[1])
          self.ranges[int(self.angle)]=numpy.mean(self.frame[str(self.angle)])
 
-      self.lidar_publisher(self.ranges,self.intensive)
-      # self.rplidar_matrix()
-      self.frame = {}
-      self.ranges, self.intensive = [], []
+      self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
+      self.rplidar_matrix()
+      # self.frame = {}
+      # self.ranges, self.intensive = [], []
       time.sleep(0.01)
   else:
    rospy.loginfo('command for rplidar single scan error or return value error')
