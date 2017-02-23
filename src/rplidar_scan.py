@@ -213,7 +213,7 @@ class driver:
           self.ranges[int(angle)]=round(numpy.mean(self.frame[str(angle)]),4)
         else:
          rospy.logwarn(str(angle)+' ++++ '+str(len(self.frame.keys())))
-       rospy.loginfo(str(len(data_buff))), _str
+       rospy.loginfo(str(len(data_buff)) + '_str: \n' + _str + '\n')
        self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
        rate.sleep()
        self.port.flushOutput()
