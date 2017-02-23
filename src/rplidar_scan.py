@@ -48,11 +48,9 @@ class driver:
    rospy.set_param('~scan_topic','/scan')
   self.scan_topic=rospy.get_param('~scan_topic')
 
-  if not rospy.has_param('~rp_Frequency'):
-   rospy.set_param('~rp_Frequency', 7.0)
-  PublishFrequency = rospy.get_param('~rp_Frequency')
-
-  self.period = rospy.Duration(1.0 / PublishFrequency)
+  if not rospy.has_param('~rate'):
+   rospy.set_param('~rate', 7.0)
+  self.frequency = rospy.get_param('~rate')
 
  def port_finder(self,trigger):
   ports = list(list_ports_linux.comports())
@@ -174,8 +172,8 @@ class driver:
   cmd = scan
   self.command(cmd)
   if self.header_check()==measurement:
+   rate = rospy.Rate(self.frequency)
    while not rospy.is_shutdown():
-    with self.locker:
      # checking buff len
      while self.port.inWaiting()< response_device_point_format.sizeof():
       time.sleep(0.001)
@@ -208,10 +206,11 @@ class driver:
          self.ranges[int(self.angle)]=numpy.mean(self.frame[str(self.angle)])
 
       self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
-      self.rplidar_matrix()
+      rate.sleep()
+      self.rplidsar_matrix()
       # self.frame = {}
       # self.ranges, self.intensive = [], []
-      time.sleep(0.01)
+
   else:
    rospy.loginfo('command for rplidar single scan error or return value error')
    os.system('rosnode kill cmd_tester')
