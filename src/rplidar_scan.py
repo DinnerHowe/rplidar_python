@@ -173,7 +173,7 @@ class driver:
   self.frame_default = {}
   self.ranges_default = []
   self.intensive_default = []
-  for i in range(360):
+  for i in range(361):
    self.frame_default['%s.0' % i] = []
    self.ranges_default.append(float('inf'))
    self.intensive_default.append(0.0)
