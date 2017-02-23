@@ -199,24 +199,27 @@ class driver:
      raw_data.append(copy.deepcopy(_str))
      # release data
      if synbit:
+      data_buff = []
       data_buff=list(raw_data)
       raw_data.clear()
-      for i in range(len(data_buff)):
-       PolorCoordinate=self.OutputCoordinate(data_buff[i])
-       angle=PolorCoordinate[0]
-       if str(angle) in self.frame:
-        if not math.isinf(PolorCoordinate[1]):
-         self.intensive[int(angle)]=PolorCoordinate[2]
-         self.frame[str(angle)].append(copy.deepcopy(PolorCoordinate[1]))
-         self.ranges[int(angle)]=round(numpy.mean(self.frame[str(angle)]),4)
-       else:
-        rospy.loginfo(str(angle)+' ++++ '+str(len(self.frame.keys())))
-      self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
-      rate.sleep()
-      self.port.flushOutput()
-      self.rplidar_matrix()
-      # self.frame = {}
-      # self.ranges, self.intensive = [], []
+      if data_buff !=[]:
+       for i in range(len(data_buff)):
+        PolorCoordinate=self.OutputCoordinate(data_buff[i])
+        angle=PolorCoordinate[0]
+        if str(angle) in self.frame:
+         if not math.isinf(PolorCoordinate[1]):
+          self.intensive[int(angle)]=PolorCoordinate[2]
+          self.frame[str(angle)].append(copy.deepcopy(PolorCoordinate[1]))
+          self.ranges[int(angle)]=round(numpy.mean(self.frame[str(angle)]),4)
+        else:
+         rospy.logwarn(str(angle)+' ++++ '+str(len(self.frame.keys())))
+       rospy.loginfo(str(len(data_buff)))
+       self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
+       rate.sleep()
+       self.port.flushOutput()
+       self.rplidar_matrix()
+       # self.frame = {}
+       # self.ranges, self.intensive = [], []
 
   else:
    rospy.loginfo('command for rplidar single scan error or return value error')
