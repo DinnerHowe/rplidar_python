@@ -106,7 +106,6 @@ class driver:
 
  #返回头字节
  def header_check(self):
-
   rospy.loginfo('start evaluating header')
   stamp=time.time()
   time_out=1
@@ -174,35 +173,28 @@ class driver:
   if self.header_check()==measurement:
    rate = rospy.Rate(self.frequency)
    while not rospy.is_shutdown():
-     # checking buff len
      while self.port.inWaiting()< response_device_point_format.sizeof():
       time.sleep(0.001)
-
      _str = self.port.read(response_device_point_format.sizeof())
      response=response_device_point_format.parse(_str)
      self.synbit=response.quality.syncbit
-
      # start a new circle?
      if self.synbit and self.not_start:
        self.not_start=False
-
      # fill up raw data
      if not self.not_start:
-      self.raw_data.append(_str)
-
+      self.raw_data.append(copy.deepcopy(_str))
      # release data
      if self.synbit and not self.not_start:
       self.data_buff=list(self.raw_data)
       self.raw_data.clear()
-
       for i in range(len(self.data_buff)):
        self.PolorCoordinate=self.OutputCoordinate(self.data_buff[i])
-       #print "###",self.PolorCoordinate
        self.angle=self.PolorCoordinate[0]
        if str(self.angle) in self.frame:
         if not math.isinf(self.PolorCoordinate[1]):
          self.intensive[int(self.angle)]=self.PolorCoordinate[2]
-         self.frame[str(self.angle)].append(self.PolorCoordinate[1])
+         self.frame[str(self.angle)].append(copy.deepcopy(self.PolorCoordinate[1]))
          self.ranges[int(self.angle)]=numpy.mean(self.frame[str(self.angle)])
 
       self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
