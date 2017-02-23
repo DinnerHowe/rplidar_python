@@ -91,7 +91,6 @@ class driver:
 
   self.stop_device()
 
-          
  #发送命令
  def command(self,com):
   rospy.loginfo('sending commands')
@@ -130,6 +129,7 @@ class driver:
   rospy.loginfo("time out") 
    
  #硬件状态
+
  def device_health(self):
   rospy.loginfo('device_health  %s'%hex(3))
   cmd = get_device_health
@@ -153,6 +153,7 @@ class driver:
   time.sleep(0.001)  
 
  # start scanning
+
  def rplidar_matrix(self):
   self.frame={}
   self.ranges,self.intensive=[],[]
@@ -165,9 +166,6 @@ class driver:
   rospy.loginfo('rplidar single scan   %s'%hex(5))
   cmd = scan
   self.command(cmd)
-
-  a=0
-  
   if self.header_check()==measurement:
    while not rospy.is_shutdown():
     # checking buff len
@@ -206,12 +204,10 @@ class driver:
        pass
             
      self.lidar_publisher(self.ranges,self.intensive)
-     rospy.sleep(0.01)
-     self.rplidar_matrix() 
+     self.rplidar_matrix()
   else:
    rospy.loginfo('command for rplidar single scan error or return value error')
    os.system('rosnode kill cmd_tester')
-
 
  def OutputCoordinate(self,raw):
   response=response_device_point_format.parse(raw)
@@ -226,7 +222,6 @@ class driver:
    dis=float('inf')
 
   return [angle,dis,inten]
-
 
  def lidar_publisher(self,ranges,intensive):
   self.duration=(rospy.Time.now().secs-self.current.secs)+(rospy.Time.now().nsecs-self.current.nsecs)*(10**(-9))
