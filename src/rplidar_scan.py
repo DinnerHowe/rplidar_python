@@ -20,6 +20,10 @@ from sensor_msgs.msg import LaserScan
 from threading import Lock
 import copy
 
+deque_len = 360
+raw_data = collections.deque(maxlen=deque_len)
+
+
 class driver:
 
  def stop_device(self):
@@ -29,13 +33,12 @@ class driver:
   self.port.setDTR(1)
   self.port.close()
 
- def defination(self,maxlen=360):
-  self.maxlen=maxlen
+ def defination(self):
+  global deque_len
+  self.maxlen = deque_len
   self.ResponseType={measurement:'measurement',devinfo:'devinfo',devhealth:'devhealth'}
   self.ResponseStatus={status_ok:'status_ok',status_warning:'status_warning',status_error:'status_error'}
   self.ResponseMode={SINGLE:'SINGLE', MULTI:'MULTI',UNDEFINED_f:'UNDEFINED',UNDEFINED_s:'UNDEFINED'}
-
-  self.raw_data=collections.deque(maxlen=self.maxlen)
 
   self.default_params()
 
@@ -52,7 +55,7 @@ class driver:
   self.scan_topic=rospy.get_param('~scan_topic')
 
   if not rospy.has_param('~rate'):
-   rospy.set_param('~rate', 7.0)
+   rospy.set_param('~rate', 10.0)
   self.frequency = rospy.get_param('~rate')
 
  def port_finder(self,trigger):
@@ -186,32 +189,34 @@ class driver:
       time.sleep(0.001)
      _str = self.port.read(response_device_point_format.sizeof())
      response=response_device_point_format.parse(_str)
-     self.synbit=response.quality.syncbit
+     synbit=response.quality.syncbit
      # start a new circle?
-     if self.synbit and self.not_start:
+     if synbit and self.not_start:
        self.not_start=False
      # fill up raw data
      if not self.not_start:
-      self.raw_data.append(copy.deepcopy(_str))
-     # release data
-     if self.synbit and not self.not_start:
-      self.data_buff=list(self.raw_data)
-      self.raw_data.clear()
-      for i in range(len(self.data_buff)):
-       self.PolorCoordinate=self.OutputCoordinate(self.data_buff[i])
-       self.angle=self.PolorCoordinate[0]
-       if str(self.angle) in self.frame:
-        if not math.isinf(self.PolorCoordinate[1]):
-         self.intensive[int(self.angle)]=self.PolorCoordinate[2]
-         self.frame[str(self.angle)].append(copy.deepcopy(self.PolorCoordinate[1]))
-         self.ranges[int(self.angle)]=round(numpy.mean(self.frame[str(self.angle)]),4)
-
-      self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
-      rate.sleep()
-      self.rplidar_matrix()
-      self.port.flushOutput()
-      # self.frame = {}
-      # self.ranges, self.intensive = [], []
+      global raw_data
+      raw_data.append(copy.deepcopy(_str))
+      # release data
+      if synbit:
+       data_buff=list(raw_data)
+       raw_data.clear()
+       for i in range(len(data_buff)):
+        PolorCoordinate=self.OutputCoordinate(data_buff[i])
+        angle=PolorCoordinate[0]
+        if str(angle) in self.frame:
+         if not math.isinf(PolorCoordinate[1]):
+          self.intensive[int(angle)]=PolorCoordinate[2]
+          self.frame[str(angle)].append(copy.deepcopy(PolorCoordinate[1]))
+          self.ranges[int(angle)]=round(numpy.mean(self.frame[str(angle)]),4)
+        else:
+         rospy.loginfo(str(angle))
+       self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
+       rate.sleep()
+       self.rplidar_matrix()
+       self.port.flushOutput()
+       # self.frame = {}
+       # self.ranges, self.intensive = [], []
 
   else:
    rospy.loginfo('command for rplidar single scan error or return value error')
