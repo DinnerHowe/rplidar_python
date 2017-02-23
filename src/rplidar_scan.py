@@ -206,6 +206,7 @@ class driver:
        pass
             
      self.lidar_publisher(self.ranges,self.intensive)
+     rospy.sleep(0.01)
      self.rplidar_matrix() 
   else:
    rospy.loginfo('command for rplidar single scan error or return value error')
