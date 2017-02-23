@@ -202,7 +202,7 @@ class driver:
       data_buff = []
       data_buff=list(raw_data)
       raw_data.clear()
-      if data_buff !=[]:
+      if len(data_buff) > 1:
        for i in range(len(data_buff)):
         PolorCoordinate=self.OutputCoordinate(data_buff[i])
         angle=PolorCoordinate[0]
@@ -218,9 +218,8 @@ class driver:
        rate.sleep()
        self.port.flushOutput()
        self.rplidar_matrix()
-       # self.frame = {}
-       # self.ranges, self.intensive = [], []
-
+      else:
+       self.port.flushOutput()
   else:
    rospy.loginfo('command for rplidar single scan error or return value error')
    os.system('rosnode kill cmd_tester')
