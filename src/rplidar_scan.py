@@ -169,7 +169,8 @@ class driver:
   cmd = scan
   self.command(cmd)
   if self.header_check()==measurement:
-   while not rospy.is_shutdown():
+   # while not rospy.is_shutdown():
+   while True:
     # checking buff len
     while self.port.inWaiting()< response_device_point_format.sizeof():
      time.sleep(0.001)
@@ -200,13 +201,10 @@ class driver:
         self.intensive[int(self.angle)]=self.PolorCoordinate[2]
         self.frame[str(self.angle)].append(self.PolorCoordinate[1])
         self.ranges[int(self.angle)]=numpy.mean(self.frame[str(self.angle)])
-       else:
-        pass
-      else:
-       pass
-            
+
      self.lidar_publisher(self.ranges,self.intensive)
      self.rplidar_matrix()
+     rospy.sleep(rospy.Duration(1.0/7.0))
   else:
    rospy.loginfo('command for rplidar single scan error or return value error')
    os.system('rosnode kill cmd_tester')
