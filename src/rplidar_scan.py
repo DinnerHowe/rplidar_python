@@ -190,6 +190,7 @@ class driver:
     _str = self.port.read(response_device_point_format.sizeof())
     response=response_device_point_format.parse(_str)
     synbit=response.quality.syncbit
+    syncbit_inverse = response.quality.syncbit_inverse
     # start a new circle?
     if synbit and self.not_start:
       self.not_start=False
@@ -198,7 +199,7 @@ class driver:
      global raw_data
      raw_data.append(_str)
      # release data
-     if synbit:
+     if synbit and not syncbit_inverse:
       data_buff = []
       data_buff=list(raw_data)
       raw_data.clear()
