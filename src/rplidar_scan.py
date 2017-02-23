@@ -196,7 +196,7 @@ class driver:
     # fill up raw data
     if not self.not_start:
      global raw_data
-     raw_data.append(copy.deepcopy(_str))
+     raw_data.append(_str)
      # release data
      if synbit:
       data_buff = []
@@ -213,7 +213,7 @@ class driver:
           self.ranges[int(angle)]=round(numpy.mean(self.frame[str(angle)]),4)
         else:
          rospy.logwarn(str(angle)+' ++++ '+str(len(self.frame.keys())))
-       rospy.loginfo(str(len(data_buff)))
+       rospy.loginfo(str(len(data_buff))), _str
        self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
        rate.sleep()
        self.port.flushOutput()
