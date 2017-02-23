@@ -200,7 +200,7 @@ class driver:
       self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
       rate.sleep()
       self.rplidar_matrix()
-      self.port.flushInput()
+      self.port.flushOutput()
       # self.frame = {}
       # self.ranges, self.intensive = [], []
 
