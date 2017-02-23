@@ -195,11 +195,12 @@ class driver:
         if not math.isinf(self.PolorCoordinate[1]):
          self.intensive[int(self.angle)]=self.PolorCoordinate[2]
          self.frame[str(self.angle)].append(copy.deepcopy(self.PolorCoordinate[1]))
-         self.ranges[int(self.angle)]=numpy.mean(self.frame[str(self.angle)])
+         self.ranges[int(self.angle)]=round(numpy.mean(self.frame[str(self.angle)]),4)
 
       self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
       rate.sleep()
       self.rplidar_matrix()
+      self.port.flushInput()
       # self.frame = {}
       # self.ranges, self.intensive = [], []
 
