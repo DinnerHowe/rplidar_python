@@ -46,8 +46,6 @@ class driver:
   else:
    pass
   scan_topic=rospy.get_param('~scan_topic')
-  
-  self.pub_data=rospy.Publisher(scan_topic,LaserScan,queue_size=1)
 
  def port_finder(self,trigger):
   ports = list(list_ports_linux.comports())
@@ -255,7 +253,8 @@ class driver:
   # rplidar_ranges
   self.LaserScan.ranges=ranges
   self.LaserScan.intensities=intensive
-  self.pub_data.publish(self.LaserScan)
+  pub_data=rospy.Publisher(scan_topic,LaserScan,queue_size=1)
+  pub_data.publish(self.LaserScan)
 
 if __name__ == "__main__":
  try:
