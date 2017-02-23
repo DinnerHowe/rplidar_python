@@ -37,6 +37,8 @@ class driver:
 
   self.raw_data=collections.deque(maxlen=self.maxlen)
 
+  self.default_params()
+
   # self.LaserScan=LaserScan()
   # self.LaserScan.header.seq=0
   self.seq = 0
@@ -160,12 +162,18 @@ class driver:
  # start scanning
 
  def rplidar_matrix(self):
-  self.frame={}
-  self.ranges,self.intensive=[],[]
+  self.frame=copy.deepcopy(self.frame_default)
+  self.ranges= [i for i in self.ranges_default]
+  self.intensive= [i for i in self.intensive_default]
+
+ def default_params(self):
+  self.frame_default = {}
+  self.ranges_default = []
+  self.intensive_default = []
   for i in range(360):
-   self.frame['%s.0'%i]=[]
-   self.ranges.append(float('inf'))
-   self.intensive.append(0.0)
+   self.frame_default['%s.0' % i] = []
+   self.ranges_default.append(float('inf'))
+   self.intensive_default.append(0.0)
 
  def rplidar_points(self):
   rospy.loginfo('rplidar single scan   %s'%hex(5))
