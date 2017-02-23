@@ -165,7 +165,7 @@ class driver:
  # start scanning
 
  def rplidar_matrix(self):
-  self.frame=copy.deepcopy(self.frame_default)
+  self.frame=self.frame_default.copy()
   self.ranges= [i for i in self.ranges_default]
   self.intensive= [i for i in self.intensive_default]
 
@@ -210,11 +210,11 @@ class driver:
          self.frame[str(angle)].append(copy.deepcopy(PolorCoordinate[1]))
          self.ranges[int(angle)]=round(numpy.mean(self.frame[str(angle)]),4)
        else:
-        rospy.loginfo(str(angle))
+        rospy.loginfo(str(angle)),self.frame
       self.lidar_publisher(copy.deepcopy(self.ranges),copy.deepcopy(self.intensive))
       rate.sleep()
-      self.rplidar_matrix()
       self.port.flushOutput()
+      self.rplidar_matrix()
       # self.frame = {}
       # self.ranges, self.intensive = [], []
 
