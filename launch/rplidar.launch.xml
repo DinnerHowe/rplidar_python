@@ -1,11 +1,11 @@
 <launch>
  <arg name="rplidar_frame" default="laser" />
 
- <node pkg="rplidar_python" type="rplidar_scan.py" name="rplidar" output="screen" respawn="true">
-  <param name="frame_id" value="$(arg rplidar_frame)" />
+ <node pkg="rplidar_python" type="rplidar_node.py" name="rplidar" output="screen" respawn="true">
+  <param name="rplidar_frame" value="$(arg rplidar_frame)" />
   <param name="range_min" value="0.15"/>
   <param name="range_max" value="6.0"/>
-
+  <param name="rplidar_port_name" value="CP2102 USB to UART Bridge Controller"/>
  </node>
 </launch>
 

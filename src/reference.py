@@ -23,6 +23,7 @@ reset=0x40#测距核心软重启
 force_scan=0x21#请求进入扫描采样状态,强制数据输出
 scan=0x20#请求进入扫描采样状态
 
+
 #单次应答
 get_device_info=0x50#获取设备序列号等信息
 get_device_health=0x52#获取设备健康状态
