@@ -7,6 +7,7 @@ Panels:
         - /Global Options1
         - /Status1
         - /RPLidarLaserScan1
+        - /RPLidarLaserScan1/Status1
       Splitter Ratio: 0.5
     Tree Height: 413
   - Class: rviz/Selection
@@ -26,7 +27,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: RPLidarLaserScan
 Visualization Manager:
   Class: ""
   Displays:
@@ -81,7 +82,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: laser
+    Fixed Frame: camera_depth_frame
     Frame Rate: 30
   Name: root
   Tools:
@@ -130,5 +131,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1215
-  X: 55
-  Y: 14
+  X: 548
+  Y: 122

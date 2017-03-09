@@ -8,78 +8,64 @@ This program is free software; you can redistribute it and/or modify
 from reference import *
 import time
 import rospy
+import list_ports_linux
 
-def rplidar_points(self):
-    while self.port.inWaiting() < response_device_point_format.sizeof():
+ranges_default = []
+for i in range(360):
+    ranges_default.append(float('inf'))
+
+def rplidar_points(port, raw_data):
+    while port.inWaiting() < response_device_point_format.sizeof():
         time.sleep(0.001)
-    global reset
-    print 'loop'
-    reset = False
-    _str = self.port.read(response_device_point_format.sizeof())
-    global raw_data
+    _str = port.read(response_device_point_format.sizeof())
     raw_data.append(_str)
 
-def stop_device(self):
+def stop_device(port):
     cmd = stop
-    command(cmd)
-    self.port.setDTR(1)
-    self.port.close()
+    send_command(port, cmd)
+    port.setDTR(1)
+    # port.close()
 
-def command(self, com):
+def send_command(port, com):
     rospy.loginfo('sending commands')
     command = com
     cmd = command_format.build(Container(sync_byte=sync_byte, cmd_flag=command))
-    self.port.write(cmd)
+    port.write(cmd)
 
-def header_check(self):
+def header_check(port):
     rospy.loginfo('evaluating header')
     stamp = time.time()
     time_out = 1
     while time.time() < stamp + time_out:
-        if self.port.inWaiting() < response_header_format.sizeof():
+        if port.inWaiting() < response_header_format.sizeof():
             time.sleep(0.01)
         else:
-            _str = self.port.read(response_header_format.sizeof())
+            _str = port.read(response_header_format.sizeof())
             response_str = response_header_format.parse(_str)
-            # rospy.loginfo('return data stream header checking result:\n')
-            # rospy.loginfo('\ninitial response bytes(0XA5 0X5A): %s %s\n' % (hex(response_str.sync_byte1).upper(), hex(response_str.sync_byte2).upper()))
-            # rospy.loginfo('response_size: %s'%hex(response_str.response.response_size))
-            # rospy.loginfo('response_data: %s'%hex(response_str.response.response_data))
-            # rospy.loginfo('response_mode: %s'%self.ResponseMode[response_str.response.response_mode])
-            # rospy.loginfo('response_type: %s'%self.ResponseType[response_str.response_type])
             if response_str.sync_byte1 != sync_byte1 or response_str.sync_byte2 != sync_byte2:
                 rospy.logerr('unexpect response header')
-                return response_str.response_type
-                # os.system('rosnode kill cmd_tester')
-                # self.defination()
-                # self.rplidar_matrix()
-            else:
-                return response_str.response_type
+            return response_str.response_type
     rospy.loginfo("time out")
+    return None
 
-def device_health(self):
+def device_health(port):
     cmd = get_device_health
-    self.command(cmd)
-    if self.header_check() == devhealth:
-        _str = self.port.readline(response_device_health_format.sizeof())
+    send_command(port, cmd)
+    if header_check(port) == devhealth:
+        _str = port.readline(response_device_health_format.sizeof())
         response_str = response_device_health_format.parse(_str)
         return response_str
     else:
         rospy.logwarn('command for devhealth error or return value error')
         return None
 
-def driver_reset(self):
+def driver_reset(port):
     cmd = reset
-    self.command(cmd)
-    self.port.setDTR(1)
+    send_command(port, cmd)
+    port.setDTR(1)
     time.sleep(0.01)
 
-def rplidar_matrix(self):
-    self.frame = self.frame_default.copy()
-    self.ranges = [i for i in self.ranges_default]
-    # self.intensive = [i for i in self.intensive_default]
-
-def OutputCoordinate(self, raw):
+def OutputCoordinate(raw):
     response = response_device_point_format.parse(raw)
     inten = response.quality.quality
     angular = (response.angle_q6 >> angle_shift) / 64.0
@@ -90,12 +76,26 @@ def OutputCoordinate(self, raw):
         dis = float('inf')
     return [angle, dis, inten]
 
+def range_matrix():
+    global ranges_default
+    return [i for i in ranges_default]
 
-def default_params(self):
-    self.frame_default = {}
-    self.ranges_default = []
-    # self.intensive_default = []
-    for i in range(360):
-        self.frame_default['%s.0' % i] = []
-        self.ranges_default.append(float('inf'))
-        # self.intensive_default.append(0.0)
+def range_matrix():
+    global ranges_default
+    return [i for i in ranges_default]
+
+def intensive_matrix():
+    global ranges_default
+    return [0 for i in ranges_default]
+
+def port_finder(trigger, port_name):
+    ports = list(list_ports_linux.comports())
+    for port in ports:
+        if port_name in port[1]:
+            trigger = True
+            rospy.logwarn('find rplidar connect on port: %s' % port[0])
+            return [port, trigger]
+    return [None, trigger]
+
+def fusion(origion_PolorCoordinate, current_PolorCoordinate):
+    return round((origion_PolorCoordinate[0]*origion_PolorCoordinate[1] + current_PolorCoordinate[1]*current_PolorCoordinate[2])/float(current_PolorCoordinate[2] + origion_PolorCoordinate[1]), 4)

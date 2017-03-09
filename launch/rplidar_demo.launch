@@ -1,7 +1,7 @@
 <launch>
 
  <include file="$(find rplidar_python)/launch/rplidar.launch.xml">
-  <arg name="rplidar_frame"  value="/laser" />
+  <arg name="rplidar_frame"  value="laser" />
  </include>
 
 
