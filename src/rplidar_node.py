@@ -17,7 +17,7 @@ import rplidar_scan
 
 if __name__ == "__main__":
     try:
-        rospy.init_node('RPlidar')
+        rospy.init_node('RPlidxar')
         rospy.loginfo("initialization system")
         try:
             rplidar_scan.driver()
