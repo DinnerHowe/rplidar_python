@@ -4,7 +4,6 @@ project(rplidar_python)
 find_package(catkin REQUIRED COMPONENTS
   roslaunch
   rospy
-  message_generation
 )
 
 roslaunch_add_file_check(launch)

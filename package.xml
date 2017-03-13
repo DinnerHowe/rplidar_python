@@ -10,8 +10,6 @@
 
 
   <buildtool_depend>catkin</buildtool_depend>
-
-  <buildtool_depend>message_generation</buildtool_depend>
   <build_depend>roslaunch</build_depend>
   <build_depend>rospy</build_depend>
 
