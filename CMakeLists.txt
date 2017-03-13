@@ -4,35 +4,14 @@ project(rplidar_python)
 find_package(catkin REQUIRED COMPONENTS
   roslaunch
   rospy
-  std_msgs
   message_generation
-  geometry_msgs
-  #rplidar_python_msgs
 )
-
-
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   rplidar_point.msg
-#   rplidar_data.msg
-#   rplidar_parameters.msg
-# )
-
-
-## Generate added messages and services with any dependencies listed here
- generate_messages(
-   DEPENDENCIES
-   std_msgs
-   geometry_msgs
-   #rplidar_python_msgs # Or other packages containing msgs
- )
 
 roslaunch_add_file_check(launch)
 
 catkin_package(
   LIBRARIES rplidar_python
-  CATKIN_DEPENDS roslaunch rospy message_runtime std_msgs geometry_msgs  #rplidar_python_msgs
+  CATKIN_DEPENDS roslaunch rospy message_runtime
   DEPENDS system_lib
 )
 
