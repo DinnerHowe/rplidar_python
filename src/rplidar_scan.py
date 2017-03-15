@@ -19,22 +19,19 @@ import getpass
 import collections
 import math
 from sensor_msgs.msg import LaserScan
-import copy
 import function
-import subprocess
 
-raw_data = collections.deque(maxlen=10)
+raw_data = collections.deque(maxlen=360)
 para_data = collections.deque(maxlen=360)
 compress_data = collections.deque(maxlen=1)
 reset = False
 start = False
+run = True
 
 class ClearParams:
     def __init__(self):
         rospy.logwarn('clearing parameters')
         rospy.delete_param('~rplidar_scan_topic')
-        rospy.delete_param('~rplidar_scan_rate')
-        rospy.delete_param('~rplidar_pub_rate')
         rospy.delete_param('~rplidar_port_name')
         rospy.delete_param('~rplidar_frame')
         rospy.delete_param('~rplidar_range_min')
@@ -44,31 +41,26 @@ class driver:
     def __init__(self):
         self.defination()
         self.begin()
-        rospy.Timer(rospy.Duration(self.scan_frequency), self.Read_Data)
-        rospy.Timer(rospy.Duration(self.scan_frequency), self.Resolve_Data)
-        rospy.Timer(rospy.Duration(self.pub_frequency), self.lidar_publisher)
-        rospy.spin()
+        while run:
+            self.Read_Data()
+            self.lidar_publisher()
+        rospy.signal_shutdown('restart')
+        self.port.close()
 
     def defination(self):
+        self.scan_frequency = 0.0001
+        self.pub_frequency = 0.01
+
         self.ResponseType = {measurement: 'measurement', devinfo: 'devinfo', devhealth: 'devhealth'}
         self.ResponseStatus = {status_ok: 'status_ok', status_warning: 'status_warning', status_error: 'status_error'}
         self.ResponseMode = {SINGLE: 'SINGLE', MULTI: 'MULTI', UNDEFINED_f: 'UNDEFINED', UNDEFINED_s: 'UNDEFINED'}
 
-        # function.default_params(self)
         self.seq = 0
         self.accout = getpass.getuser()
 
         if not rospy.has_param('~rplidar_scan_topic'):
             rospy.set_param('~rplidar_scan_topic', '/rplidar_scan')
         self.scan_topic = rospy.get_param('~rplidar_scan_topic')
-
-        if not rospy.has_param('~rplidar_scan_rate'):
-            rospy.set_param('~rplidar_scan_rate', 0.0001)
-        self.scan_frequency = rospy.get_param('~rplidar_scan_rate')
-
-        if not rospy.has_param('~rplidar_pub_rate'):
-            rospy.set_param('~rplidar_pub_rate', 0.0005)
-        self.pub_frequency = rospy.get_param('~rplidar_pub_rate')
 
         if not rospy.has_param('~rplidar_port_name'):
             rospy.set_param('~rplidar_port_name', 'CP2102 USB to UART Bridge Controller')
@@ -94,6 +86,8 @@ class driver:
 
     def begin(self):
         global start
+        global run
+        run = True
         if self.find_port:
             self.port.setDTR(1)
             rospy.logwarn("connect port: %s" %self.port_name)
@@ -101,9 +95,9 @@ class driver:
             try:
                 rospy.loginfo('health status: %s'%self.ResponseStatus[health.status])
             except:
-                rospy.logwarn('health status: %s' %health)
-                rospy.signal_shutdown('health check error')
-                self.port.close()
+                rospy.logwarn('health status: %s restart program' %health)
+                # rospy.signal_shutdown('header check error')
+                run = False
             if health != None:
                 if health.status != status_ok:
                     function.driver_reset(self.port)
@@ -116,21 +110,24 @@ class driver:
                     else:
                         rospy.logerr('header check error,response type not measurement')
                         start = False
-                        rospy.signal_shutdown('header check error')
+                        run = False
+                        # rospy.signal_shutdown('header check error')
         else:
             rospy.logwarn('Can NOT find rplidar please check rplidar connection')
             rospy.logwarn('Shut Down Progress')
-            rospy.signal_shutdown('None connection')
+            run = False
+            # rospy.signal_shutdown('None connection')
 
-    def Read_Data(self, event):
+    def Read_Data(self):
         global start
         if start:
             current = rospy.Time.now()
             global raw_data
             function.rplidar_points(self.port, raw_data)
-            self.duration = (rospy.Time.now().secs - current.secs) + (rospy.Time.now().nsecs - current.nsecs) * (10 ** (-9))
+            # self.duration = (rospy.Time.now().secs - current.secs) + (rospy.Time.now().nsecs - current.nsecs) * (10 ** (-9))
+        self.Resolve_Data()
 
-    def Resolve_Data(self, event):
+    def Resolve_Data(self):
         global raw_data
         global reset
         global para_data
@@ -176,7 +173,7 @@ class driver:
                 function.stop_device(self.port)
                 self.begin()
 
-    def lidar_publisher(self, event):
+    def lidar_publisher(self):
         global compress_data
         if len(compress_data) > 0:
             # header
@@ -189,8 +186,8 @@ class driver:
             _Scan.angle_max = numpy.pi - numpy.radians(0.0)
             _Scan.angle_min = numpy.pi - numpy.radians(360.0)
             _Scan.angle_increment = -numpy.radians(1.0)
-            _Scan.time_increment = self.duration / 360
-            _Scan.scan_time = self.duration
+            # _Scan.time_increment = self.duration / 360
+            # _Scan.scan_time = self.duration
             _Scan.range_min = self.range_min
             _Scan.range_max = self.range_max
             # rplidar_ranges
