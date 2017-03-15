@@ -32,13 +32,13 @@ start = False
 class ClearParams:
     def __init__(self):
         rospy.logwarn('clearing parameters')
-        rospy.delete_param('~scan_topic')
+        rospy.delete_param('~rplidar_scan_topic')
         rospy.delete_param('~rplidar_scan_rate')
         rospy.delete_param('~rplidar_pub_rate')
         rospy.delete_param('~rplidar_port_name')
         rospy.delete_param('~rplidar_frame')
-        rospy.delete_param('~range_min')
-        rospy.delete_param('~range_max')
+        rospy.delete_param('~rplidar_range_min')
+        rospy.delete_param('~rplidar_range_max')
 
 class driver:
     def __init__(self):
@@ -58,16 +58,16 @@ class driver:
         self.seq = 0
         self.accout = getpass.getuser()
 
-        if not rospy.has_param('~scan_topic'):
-            rospy.set_param('~scan_topic', '/scan')
-        self.scan_topic = rospy.get_param('~scan_topic')
+        if not rospy.has_param('~rplidar_scan_topic'):
+            rospy.set_param('~rplidar_scan_topic', '/rplidar_scan')
+        self.scan_topic = rospy.get_param('~rplidar_scan_topic')
 
         if not rospy.has_param('~rplidar_scan_rate'):
             rospy.set_param('~rplidar_scan_rate', 0.0001)
         self.scan_frequency = rospy.get_param('~rplidar_scan_rate')
 
         if not rospy.has_param('~rplidar_pub_rate'):
-            rospy.set_param('~rplidar_pub_rate', 0.001)
+            rospy.set_param('~rplidar_pub_rate', 0.0005)
         self.pub_frequency = rospy.get_param('~rplidar_pub_rate')
 
         if not rospy.has_param('~rplidar_port_name'):
@@ -75,16 +75,16 @@ class driver:
         self.rplidar_port_name = rospy.get_param('~rplidar_port_name')
 
         if not rospy.has_param('~rplidar_frame'):
-            rospy.set_param('~rplidar_frame', '/camera_depth_frame')
+            rospy.set_param('~rplidar_frame', 'laser')
         self.rplidar_frame = rospy.get_param('~rplidar_frame')
 
-        if not rospy.has_param('~range_min'):
-            rospy.set_param('~range_min', 0.15)
-        self.range_min = rospy.get_param('~range_min')
+        if not rospy.has_param('~rplidar_range_min'):
+            rospy.set_param('~rplidar_range_min', 0.15)
+        self.range_min = rospy.get_param('~rplidar_range_min')
 
-        if not rospy.has_param('~range_max'):
-            rospy.set_param('~range_max', 6.0)
-        self.range_max = rospy.get_param('~range_max')
+        if not rospy.has_param('~rplidar_range_max'):
+            rospy.set_param('~rplidar_range_max', 6.0)
+        self.range_max = rospy.get_param('~rplidar_range_max')
 
         finder = function.port_finder(False, self.rplidar_port_name)
         self.find_port = finder[1]
@@ -97,8 +97,6 @@ class driver:
         if self.find_port:
             self.port.setDTR(1)
             rospy.logwarn("connect port: %s" %self.port_name)
-            # self.port.flushInput()  # discarding all flush input buffer contents
-            # self.port.flushOutput()
             health = function.device_health(self.port)
             try:
                 rospy.loginfo('health status: %s'%self.ResponseStatus[health.status])
@@ -138,7 +136,6 @@ class driver:
         global para_data
         if len(raw_data)>0:
             reset = False
-            # print 'raw data length', len(raw_data)
             _str = raw_data.pop()
             response = response_device_point_format.parse(_str)
             synbit = response.quality.syncbit
@@ -170,8 +167,6 @@ class driver:
                 pass
             else:
                 rospy.logerr('buff error!!')
-                # para_data.clear()
-                # raw_data.clear()
                 if not reset:
                     reset=True
             if reset:
@@ -205,4 +200,3 @@ class driver:
             if _Scan != LaserScan():
                 pub_data = rospy.Publisher(self.scan_topic, LaserScan, queue_size=1)
                 pub_data.publish(_Scan)
-

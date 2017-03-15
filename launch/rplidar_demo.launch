@@ -4,7 +4,7 @@
   <arg name="rplidar_frame"  value="laser" />
  </include>
 
-
+<!--<node pkg="tf" type="static_transform_publisher" name="map_odom_broadcaster" args="0 0 0 0 0 0 /map /laser 100" />-->
  
  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rplidar_python)/rviz/rplidar.rviz" />
  
