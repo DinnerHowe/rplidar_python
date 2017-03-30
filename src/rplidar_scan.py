@@ -96,7 +96,6 @@ class driver:
                 rospy.loginfo('health status: %s'%self.ResponseStatus[health.status])
             except:
                 rospy.logwarn('health status: %s restart program' %health)
-                # rospy.signal_shutdown('header check error')
                 run = False
             if health != None:
                 if health.status != status_ok:
@@ -111,20 +110,16 @@ class driver:
                         rospy.logerr('header check error,response type not measurement')
                         start = False
                         run = False
-                        # rospy.signal_shutdown('header check error')
         else:
             rospy.logwarn('Can NOT find rplidar please check rplidar connection')
             rospy.logwarn('Shut Down Progress')
             run = False
-            # rospy.signal_shutdown('None connection')
 
     def Read_Data(self):
         global start
         if start:
-            current = rospy.Time.now()
             global raw_data
             function.rplidar_points(self.port, raw_data)
-            # self.duration = (rospy.Time.now().secs - current.secs) + (rospy.Time.now().nsecs - current.nsecs) * (10 ** (-9))
         self.Resolve_Data()
 
     def Resolve_Data(self):
