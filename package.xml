@@ -3,9 +3,8 @@
   <name>rplidar_python</name>
   <version>0.0.0</version>
   <description>The rplidar_python package</description>
-
-  <maintainer email="turtlebot2@todo.todo">turtlebot2</maintainer>
-
+  <author>DinnerHowe</author>
+  <maintainer email="xu001314@163.com">howe</maintainer>
   <license>TODO</license>
 
 
