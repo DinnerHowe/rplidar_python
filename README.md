@@ -11,7 +11,7 @@
 
  rplidar currently replace kinect position and use kinect frame
  
- before run this mode please go to flod /lib_for_install install essential libs
+ before run this mode please go to folder /lib_for_install install essential libs
  
         roscd rplidar_python/lib_for_install
  
